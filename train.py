@@ -114,7 +114,7 @@ def main():
         load_checkpoint(config.CHECKPOINT_GEN_A, gen_A, opt_gen, config.LEARNING_RATE)
         load_checkpoint(config.CHECKPOINT_GEN_B, gen_B, opt_gen, config.LEARNING_RATE)
 
-    dataset = CustomDataset(root_h=config.TRAIN_DIR + "/trainA", root_z=config.TRAIN_DIR + "/trainB", transform=config.transforms)
+    dataset = CustomDataset(root_a=config.TRAIN_DIR + "/trainA", root_b=config.TRAIN_DIR + "/trainB", transform=config.transforms)
     loader = DataLoader(dataset, batch_size=config.BATCH_SIZE, shuffle=True, num_workers=config.NUM_WORKERS)
 
     d_scaler = torch.cuda.amp.GradScaler()
