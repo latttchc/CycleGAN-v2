@@ -9,3 +9,7 @@ class Block(nn.Module):
             nn.InstanceNorm2d(out_channels),
             nn.LeakyReLU(0.2),
         )
+
+    def forward(self, x):
+        return self.conv(x)
+    
