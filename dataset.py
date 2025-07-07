@@ -21,8 +21,8 @@ class CustomDataset(Dataset):
         return self.length_dataset
     
     def __getitem__(self, index):
-        a_img = self.a_images(index % self.a_len)
-        b_img = self.b_images(index % self.b_len)
+        a_img = self.a_images[index % self.a_len]
+        b_img = self.b_images[index % self.b_len]
 
         a_path = os.path.join(self.root_a, a_img)
         b_path = os.path.join(self.root_b, b_img)
