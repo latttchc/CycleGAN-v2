@@ -27,7 +27,7 @@ class ResidualBlock(nn.Module):
         return x + self.block(x)
 
 class Generator(nn.Module):
-    def __init__(self, img_channels, num_features=64):
+    def __init__(self, img_channels, num_residuals=64):
         super().__init__()
         self.initial = nn.Sequential(
             nn.Conv2d(img_channels, 64, kernel_size=7, stride=1, padding=3, padding_mode="reflect"),
@@ -40,7 +40,7 @@ class Generator(nn.Module):
             ]
         )
         self.residual_blocks = nn.Sequential(
-            *[ResidualBlock(256) for _ in range(9)]
+            *[ResidualBlock(256) for _ in range(num_residuals)]
         )
         self.up_blocks = nn.ModuleList(
             [
