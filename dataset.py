@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 import configparser
 import numpy as np
 
-class Dataset(Dataset):
+class CustomDataset(Dataset):
     def __init__(self, root_a, root_b, transform=None):
         self.root_a = root_a
         self.root_b = root_b
