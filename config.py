@@ -13,10 +13,10 @@ NUM_WORKERS = 4
 NUM_EPOCHS = 10
 LOAD_MODEL = False
 SAVE_MODEL = True
-CHECKPOINT_GEN_H = "genh.pth.tar"
-CHECKPOINT_GEN_Z = "genz.pth.tar"
-CHECKPOINT_CRITIC_H = "critich.pth.tar"
-CHECKPOINT_CRITIC_Z = "criticz.pth.tar"
+CHECKPOINT_GEN_A = "genh.pth.tar"
+CHECKPOINT_GEN_B = "genz.pth.tar"
+CHECKPOINT_CRITIC_A = "critich.pth.tar"
+CHECKPOINT_CRITIC_B = "criticz.pth.tar"
 
 transforms = A.Compose(
     [
