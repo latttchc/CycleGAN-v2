@@ -5,7 +5,7 @@ class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, down=True, use_act=True, **kwargs):
         super().__init__()
         self.conv = nn.Sequential(
-        self.Conv2d(in_channels, out_channels, padding_mode="reflect", **kwargs)
+            nn.Conv2d(in_channels, out_channels, padding_mode="reflect", **kwargs)
             if down
             else nn.ConvTranspose2d(in_channels, out_channels, **kwargs),
             nn.InstanceNorm2d(out_channels),
@@ -27,7 +27,7 @@ class ResidualBlock(nn.Module):
         return x + self.block(x)
 
 class Generator(nn.Module):
-    def __init__(self, img_channels, num_features=9):
+    def __init__(self, img_channels, num_features=64):
         super().__init__()
         self.initial = nn.Sequential(
             nn.Conv2d(img_channels, 64, kernel_size=7, stride=1, padding=3, padding_mode="reflect"),
@@ -35,28 +35,28 @@ class Generator(nn.Module):
         )
         self.down_blocks = nn.ModuleList(
             [
-                ConvBlock(num_features, num_features*2, kernel_size=3, stride=2, padding=1),
-                ConvBlock(num_features*2, num_features*4, kernel_size=3, stride=2, padding=1),
+                ConvBlock(64, 128, kernel_size=3, stride=2, padding=1),
+                ConvBlock(128, 256, kernel_size=3, stride=2, padding=1),
             ]
         )
         self.residual_blocks = nn.Sequential(
-            *[ResidualBlock(num_features*4) for _ in range(num_features)]
+            *[ResidualBlock(256) for _ in range(9)]
         )
-        self.up_block = nn.ModuleList(
+        self.up_blocks = nn.ModuleList(
             [
-                ConvBlock(num_features*4, num_features*2, down=False, karnel_size=3, stride=2, padding=1, output_padding=1),
-                ConvBlock(num_features*2, num_features*1, down=False, karnel_size=3, stride=2, padding=1, output_padding=1),
+                ConvBlock(256, 128, down=False, kernel_size=3, stride=2, padding=1, output_padding=1),
+                ConvBlock(128, 64, down=False, kernel_size=3, stride=2, padding=1, output_padding=1),
             ]
         )
 
-        self.test = nn.Conv2d(num_features*1, img_channels, kernel_size=7, stride=1, padding=3, padding_mode="reflect")
+        self.last = nn.Conv2d(64, img_channels, kernel_size=7, stride=1, padding=3, padding_mode="reflect")
 
     def forward(self, x):
         x = self.initial(x)
         for layer in self.down_blocks:
             x = layer(x)
         x = self.residual_blocks(x)
-        for layer in self.up_block:
+        for layer in self.up_blocks:
             x = layer(x)
         return torch.tanh(self.last(x))
     
@@ -64,7 +64,7 @@ def test():
     img_channels = 3
     img_size = 256
     x = torch.randn((2, img_channels, img_size, img_size))
-    gen = Genenrator(img_channels, 9)
+    gen = Generator(img_channels, 64)
     print(gen(x).shape)
 
 if __name__ == "__main__":
