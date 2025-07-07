@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision.utils import save_image
 from discriminator import Discriminator
 from generator import Generator
-from dataset import Dataset
+from dataset import CustomDataset
 from utils import save_checkpoint, load_checkpoint
 
 
