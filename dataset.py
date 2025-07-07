@@ -1,9 +1,6 @@
-import torch
 from PIL import Image
-from torchvision import transforms
 import os
-from torch.utils.data import Dataset, DataLoader
-import configparser
+from torch.utils.data import Dataset
 import numpy as np
 
 class CustomDataset(Dataset):
