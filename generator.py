@@ -26,7 +26,7 @@ class ResidualBlock(nn.Module):
     def forward(self, x):
         return x + self.block(x)
 
-class Genenrator(nn.Module):
+class Generator(nn.Module):
     def __init__(self, img_channels, num_features=9):
         super().__init__()
         self.initial = nn.Sequential(
