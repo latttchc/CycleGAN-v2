@@ -17,7 +17,8 @@ CHECKPOINT_GEN_A = "genh.pth.tar"
 CHECKPOINT_GEN_B = "genz.pth.tar"
 CHECKPOINT_CRITIC_A = "critich.pth.tar"
 CHECKPOINT_CRITIC_B = "criticz.pth.tar"
-
+SAVE_HISTORY = True
+SAVE_PROGRESS = True
 
 transforms = A.Compose(
     [
