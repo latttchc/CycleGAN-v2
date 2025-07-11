@@ -174,7 +174,7 @@ def train_fn(disc_A, disc_B, gen_B, gen_A, loader, opt_disc, opt_gen, l1, mse, d
     return epoch_metrics
 
 
-def plot_training_progress(history, save_path="training_progress.png"):
+def plot_training_progress(history, save_path="plot_data/training_progress.png"):
     """
     学習進捗をグラフで可視化
     
@@ -263,7 +263,7 @@ def plot_training_progress(history, save_path="training_progress.png"):
     print(f"Training progress plot saved to {save_path}")
 
 
-def save_training_history(history, save_path="training_history.txt"):
+def save_training_history(history, save_path="plot_data/training_history.txt"):
     """
     学習履歴をテキストファイルに保存
     
@@ -299,6 +299,7 @@ def main():
     """
     # 保存ディレクトリの作成
     os.makedirs("saved_images", exist_ok=True)
+    os.makedirs("plot_data", exist_ok=True)
     
     # ========== モデルの初期化 ==========
     # 2つのDiscriminator：それぞれのドメインの真偽を判別
@@ -393,8 +394,10 @@ def main():
 
     # ========== 最終結果の保存 ==========
     # 最終的な学習履歴を保存
-    save_training_history(history, "final_training_history.txt")
-    plot_training_progress(history, "final_training_progress.png")
+    if config.SAVE_HISTORY:
+        save_training_history(history, "final_training_history.txt")
+    if config.SAVE_PROGRESS:
+        plot_training_progress(history, "final_training_progress.png")
     
     print("\n" + "="*50)
     print("Training completed successfully!")
