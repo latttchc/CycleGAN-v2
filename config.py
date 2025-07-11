@@ -18,6 +18,7 @@ CHECKPOINT_GEN_B = "genz.pth.tar"
 CHECKPOINT_CRITIC_A = "critich.pth.tar"
 CHECKPOINT_CRITIC_B = "criticz.pth.tar"
 
+
 transforms = A.Compose(
     [
         A.Resize(width=256, height=256),
