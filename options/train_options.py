@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 
 class TrainVisualizer:
