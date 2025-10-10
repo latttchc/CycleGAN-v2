@@ -2,131 +2,91 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 class ColorConstancyLoss(nn.Module):
     """
-    色恒常性損失
-    
-    モネの白内障による色域の偏り（黄色・赤色への偏向）を補正するための損失関数。
-    
-    主な機能:
-    1. RGBバランスの復元: チャンネル間の比率を目標ドメインに近づける
-    2. グレースケール分布の整合: 輝度分布のKLダイバージェンスを最小化
-    
+    色恒常性損失（高速・安定版）
+      - RGBバランス: Grey-World（チャネル間の平均差を中性へ）
+      - 参照一致: 参照 y の RGB比率に寄せる（yはdetach）
+      - 輝度分布: [0,1] 固定レンジでのヒストグラムKL
+
     Args:
-        lambda_cc (float): 色恒常性損失の重み（デフォルト: 10.0）
-    
-    References:
-        - "Color Constancy and Image Understanding" (Forsyth, 1990)
-        - モネの色彩変化分析 (Russell et al., 2007)
+        lambda_cc (float): 損失重み
+        bins (int): ヒストグラムのビン数
+        eps (float): 数値安定用
+        use_ratio (bool): RGB比率項を使うか
     """
-    def __init__(self, lambda_cc=10.0):
-        super(ColorConstancyLoss, self).__init__()
+    def __init__(self, lambda_cc=10.0, bins=64, eps=1e-6, use_ratio=True):
+        super().__init__()
         self.lambda_cc = lambda_cc
-        
+        self.bins = bins
+        self.eps = eps
+        self.use_ratio = use_ratio
+
+        # ITU-R BT.601
+        self.register_buffer("lum_w", torch.tensor([0.299, 0.587, 0.114]).view(1,3,1,1))
+
+        # ヒストグラム用ビン境界 [0,1]
+        edges = torch.linspace(0., 1., bins + 1)
+        self.register_buffer("bin_edges", edges)
+
     def forward(self, x, y):
         """
-        色恒常性損失を計算
-        
-        Args:
-            x (torch.Tensor): 生成画像 [B, 3, H, W]
-            y (torch.Tensor): ターゲットドメイン画像（参照用） [B, 3, H, W]
-        
-        Returns:
-            torch.Tensor: 色恒常性損失値
+        x: 生成画像 [B,3,H,W] （想定: tanh出力で[-1,1] → 下で[0,1]に正規化）
+        y: 参照画像 [B,3,H,W] （勾配不要）
         """
-        # RGB平均値の計算（空間次元で平均化）
-        x_mean = torch.mean(x, dim=[2, 3], keepdim=True)  # [B, 3, 1, 1]
-        y_mean = torch.mean(y, dim=[2, 3], keepdim=True)  # [B, 3, 1, 1]
-        
-        # RGBバランスの計算（各チャンネルの相対的な強度）
-        # 分母に1e-8を加えてゼロ除算を防止
-        x_balance = x_mean / (torch.sum(x_mean, dim=1, keepdim=True) + 1e-8)
-        y_balance = y_mean / (torch.sum(y_mean, dim=1, keepdim=True) + 1e-8)
-        
-        # 色バランスの差異（L1ノルム）
-        # 白内障による色の偏りを補正
-        color_balance_loss = F.l1_loss(x_balance, y_balance)
-        
-        # グレースケールイメージの計算（輝度）
-        # ITU-R BT.601標準の輝度変換係数を使用
-        x_gray = 0.299 * x[:, 0] + 0.587 * x[:, 1] + 0.114 * x[:, 2]  # [B, H, W]
-        y_gray = 0.299 * y[:, 0] + 0.587 * y[:, 1] + 0.114 * y[:, 2]  # [B, H, W]
-        
-        # グレースケール分布のKLダイバージェンス
-        # 輝度分布の統計的類似性を測定
-        x_hist = self._compute_histogram(x_gray)
-        y_hist = self._compute_histogram(y_gray)
-        kl_div = F.kl_div(torch.log(x_hist + 1e-8), y_hist, reduction='batchmean')
-        
-        # 総合損失
-        return self.lambda_cc * (color_balance_loss + kl_div)
-    
-    def _compute_histogram(self, x, bins=64):
-        """
-        グレースケール画像のヒストグラムを計算
-        
-        Args:
-            x (torch.Tensor): グレースケール画像 [B, H, W]
-            bins (int): ヒストグラムのビン数（デフォルト: 64）
-        
-        Returns:
-            torch.Tensor: 正規化されたヒストグラム [B, bins]
-        """
-        batch_size = x.size(0)
-        hist = torch.zeros(batch_size, bins).to(x.device)
-        
-        for i in range(batch_size):
-            min_val = torch.min(x[i])
-            max_val = torch.max(x[i])
-            
-            # 正規化された値をビンにマッピング
-            if max_val > min_val:
-                x_norm = (x[i] - min_val) / (max_val - min_val)
-                bin_idx = (x_norm * (bins - 1)).long().view(-1)
-                
-                # ヒストグラム計算
-                for j in range(bin_idx.size(0)):
-                    idx = bin_idx[j].item()
-                    if 0 <= idx < bins:  # 範囲チェック
-                        hist[i, idx] += 1
-                
-                # 正規化（確率分布化）
-                hist[i] = hist[i] / torch.sum(hist[i])
-            else:
-                # 画像が一様な場合、均等分布を仮定
-                hist[i] = torch.ones(bins).to(x.device) / bins
-            
-        return hist
+        B = x.size(0)
 
+        # [-1,1] -> [0,1]
+        x01 = (x + 1) * 0.5
+        y01 = (y.detach() + 1) * 0.5
 
-# テスト関数
-def test_color_constancy_loss():
-    """色恒常性損失のテスト"""
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    # テスト用画像生成
-    batch_size = 2
-    channels = 3
-    height, width = 256, 256
-    
-    # 生成画像（やや黄色がかった画像を想定）
-    x = torch.randn(batch_size, channels, height, width).to(device)
-    x[:, 0] += 0.3  # Rチャンネルを増加
-    x[:, 1] += 0.2  # Gチャンネルを増加
-    
-    # ターゲット画像（バランスの取れた画像）
-    y = torch.randn(batch_size, channels, height, width).to(device)
-    
-    # 損失計算
-    criterion = ColorConstancyLoss(lambda_cc=10.0).to(device)
-    loss = criterion(x, y)
-    
-    print(f"Color Constancy Loss: {loss.item():.4f}")
-    print(f"✓ Color Constancy Loss test passed!")
-    
-    return loss
+        # --- RGBバランス（Grey-World + 参照比率） ---
+        x_mean = x01.mean(dim=[2,3], keepdim=True)  # [B,3,1,1]
+        y_mean = y01.mean(dim=[2,3], keepdim=True)  # [B,3,1,1]
 
+        # Grey-World：チャネル間平均の差をゼロへ
+        # ex) r-g, g-b, b-r の絶対差の合計
+        rw, gw, bw = x_mean[:,0], x_mean[:,1], x_mean[:,2]
+        grey_world = (rw - gw).abs() + (gw - bw).abs() + (bw - rw).abs()
+        grey_world = grey_world.mean()  # scalar
 
-if __name__ == "__main__":
-    test_color_constancy_loss()
+        # 参照比率: チャネル比率を y に寄せる
+        if self.use_ratio:
+            x_ratio = x_mean / (x_mean.sum(dim=1, keepdim=True) + self.eps)
+            y_ratio = y_mean / (y_mean.sum(dim=1, keepdim=True) + self.eps)
+            ratio_loss = F.l1_loss(x_ratio, y_ratio)
+        else:
+            ratio_loss = x.new_zeros(())
+
+        color_term = grey_world + ratio_loss
+
+        # --- 輝度ヒストグラムのKL ---
+        x_gray = (x01 * self.lum_w).sum(dim=1, keepdim=False)  # [B,H,W]
+        y_gray = (y01 * self.lum_w).sum(dim=1, keepdim=False)  # [B,H,W]
+
+        # ベクトル化ヒストグラム（bucketize）
+        # [B,H*W], 値域は既に[0,1]
+        x_flat = x_gray.flatten(1)
+        y_flat = y_gray.flatten(1)
+
+        # bin index in [0, bins-1]
+        # bucketizeは右端含まない仕様に注意（edgesはbins+1個）
+        x_idx = torch.bucketize(x_flat, self.bin_edges) - 1
+        y_idx = torch.bucketize(y_flat, self.bin_edges) - 1
+        x_idx.clamp_(0, self.bins-1)
+        y_idx.clamp_(0, self.bins-1)
+
+        # one-hot でカウント（疎→密でもOK）
+        x_hist = torch.zeros(B, self.bins, device=x.device, dtype=x.dtype)
+        y_hist = torch.zeros_like(x_hist)
+        x_hist.scatter_add_(1, x_idx, torch.ones_like(x_idx, dtype=x.dtype))
+        y_hist.scatter_add_(1, y_idx, torch.ones_like(y_idx, dtype=y.dtype))
+
+        # 確率化 + スムージング
+        x_hist = (x_hist + self.eps) / (x_hist.sum(dim=1, keepdim=True) + self.eps * self.bins)
+        y_hist = (y_hist + self.eps) / (y_hist.sum(dim=1, keepdim=True) + self.eps * self.bins)
+
+        # F.kl_div: 入力=log_prob, target=prob
+        kl_div = F.kl_div(x_hist.log(), y_hist, reduction="batchmean")
+
+        return self.lambda_cc * (color_term + kl_div)
