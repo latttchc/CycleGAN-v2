@@ -21,10 +21,15 @@ class CustomDataset(Dataset):
         return self.length_dataset
     
     def __getitem__(self, index):
-        a_img = Image.open(self.a_images[index]).convert("RGB")
-        b_img = Image.open(self.b_images[index]).convert("RGB")
+        a_index = index % self.a_len
+        b_index = index % self.b_len
 
-        # ここでリサイズ（例: 256x256）
+        a_path = os.path.join(self.root_a, self.a_images[a_index])
+        b_path = os.path.join(self.root_b, self.b_images[b_index])
+
+        a_img = Image.open(a_path).convert("RGB")
+        b_img = Image.open(b_path).convert("RGB")
+
         size = (256, 256)
         a_img = a_img.resize(size, Image.BICUBIC)
         b_img = b_img.resize(size, Image.BICUBIC)
