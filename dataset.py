@@ -21,18 +21,17 @@ class CustomDataset(Dataset):
         return self.length_dataset
     
     def __getitem__(self, index):
-        a_img = self.a_images[index % self.a_len]
-        b_img = self.b_images[index % self.b_len]
+        a_img = Image.open(self.a_images[index]).convert("RGB")
+        b_img = Image.open(self.b_images[index]).convert("RGB")
 
-        a_path = os.path.join(self.root_a, a_img)
-        b_path = os.path.join(self.root_b, b_img)
-
-        a_img = np.array(Image.open(a_path).convert("RGB"))
-        b_img = np.array(Image.open(b_path).convert("RGB"))
+        # ここでリサイズ（例: 256x256）
+        size = (256, 256)
+        a_img = a_img.resize(size, Image.BICUBIC)
+        b_img = b_img.resize(size, Image.BICUBIC)
 
         if self.transform:
-            augmentations = self.transform(image=a_img, image0=b_img)
+            augmentations = self.transform(image=np.array(a_img), image0=np.array(b_img))
             a_img = augmentations["image"]
-            b_img =augmentations["image0"]
+            b_img = augmentations["image0"]
 
-        return a_img, b_img
+        return b_img, a_img
