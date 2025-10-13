@@ -76,15 +76,15 @@ class ColorConstancyLoss(nn.Module):
         x_idx.clamp_(0, self.bins-1)
         y_idx.clamp_(0, self.bins-1)
 
-        # one-hot でカウント（疎→密でもOK）
+        # one-hot
         x_hist = torch.zeros(B, self.bins, device=x.device, dtype=x.dtype)
         y_hist = torch.zeros_like(x_hist)
         x_hist.scatter_add_(1, x_idx, torch.ones_like(x_idx, dtype=x.dtype))
         y_hist.scatter_add_(1, y_idx, torch.ones_like(y_idx, dtype=y.dtype))
 
         # 確率化 + スムージング
-        x_hist = (x_hist + self.eps) / (x_hist.sum(dim=1, keepdim=True) + self.eps * self.bins)
-        y_hist = (y_hist + self.eps) / (y_hist.sum(dim=1, keepdim=True) + self.eps * self.bins)
+        x_hist.scatter_add_(1, x_idx, torch.ones_like(x_idx, dtype=x.dtype))
+        y_hist.scatter_add_(1, y_idx, torch.ones_like(y_idx, dtype=x.dtype))
 
         # F.kl_div: 入力=log_prob, target=prob
         kl_div = F.kl_div(x_hist.log(), y_hist, reduction="batchmean")
