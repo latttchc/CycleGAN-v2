@@ -1,15 +1,5 @@
-"""
-Enhanced CycleGAN Loss Functions
+from .color_constancy_loss import ColorConstancyLoss    # 色恒常性損失
+from .perceptual_loss import PerceptualLoss          # VGG特徴量ベースの知覚損失
+from .contrast_regularization import ContrastRegularization  # コントラスト正則化
 
-色恒常性・知覚損失・コントラスト正則化を提供
-"""
-
-from .color_constancy_loss import ColorConstancyLoss
-from .perceptual_loss import PerceptualLoss
-from .contrast_regularization import ContrastRegularization
-
-__all__ = [
-    'ColorConstancyLoss',
-    'PerceptualLoss',
-    'ContrastRegularization',
-]
+__all__ = ['ColorConstancyLoss', 'PerceptualLoss', 'ContrastRegularization']
