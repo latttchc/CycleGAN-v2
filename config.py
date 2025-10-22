@@ -17,11 +17,6 @@ LAMBDA_CYCLE = 10       # サイクル一貫性損失の重み
 NUM_WORKERS = 4         # データローダーのワーカー数
 NUM_EPOCHS = 10         # 学習エポック数
 
-# 提案: 拡張損失の重み
-LAMBDA_COLOR = 10.0           # 色恒常性損失（提案値）
-LAMBDA_PERCEPTUAL = 0.1       # 知覚損失
-LAMBDA_CONTRAST = 0.05        # コントラスト正則化
-
 # モデルの保存・読み込み設定
 LOAD_MODEL = False      # 事前訓練済みモデルの読み込み
 SAVE_MODEL = True       # モデルの保存
