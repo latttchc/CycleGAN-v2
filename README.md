@@ -1,6 +1,7 @@
 # CycleGAN Implementation
 
-PyTorchを使用したCycleGAN（Cycle-Consistent Adversarial Networks）の実装です。画像から画像への変換を、ペアになっていない訓練データで学習することができます。
+PyTorchを使用したCycleGAN（Cycle-Consistent Adversarial Networks）の実装です。
+画像から画像への変換を、ペアになっていない訓練データで学習することができます。
 
 ## プロジェクト構成
 
