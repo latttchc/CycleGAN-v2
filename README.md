@@ -3,6 +3,10 @@
 PyTorchを使用したCycleGAN（Cycle-Consistent Adversarial Networks）の実装です。
 画像から画像への変換を、ペアになっていない訓練データで学習することができます。
 
+本研究は、Unpaired Image-to-Image Translation Problem via
+Epoch-by-Epoch Comparative using CycleGAN at
+Monet’s Cataract Stageでの実験を再現するためのプロジェクトです。
+
 ## プロジェクト構成
 
 ```
