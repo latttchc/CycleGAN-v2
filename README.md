@@ -6,6 +6,11 @@ PyTorchを使用したCycleGAN（Cycle-Consistent Adversarial Networks）の実�
 本モデルは、Unpaired Image-to-Image Translation Problem via
 Epoch-by-Epoch Comparative using CycleGAN at
 Monet’s Cataract Stageでの実験を再現するためのプロジェクトです。
+---
+### 📚本研究の実績：
+- IIAI AAI 2025-Winter 採択
+- 情報処理学会 第88回全国大会 発表
+---
 
 ## プロジェクト構成
 
