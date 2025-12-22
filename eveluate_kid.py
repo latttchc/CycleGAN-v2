@@ -246,16 +246,16 @@ def evaluate_cyclegan(checkpoint_gen_b=None, checkpoint_gen_a=None):
     
     # A→B変換の評価
     print("\n[A→B 変換の評価]")
-    features_real_b = evaluator.extract_features(real_b_paths)
-    features_fake_b = evaluator.extract_features_from_generator(gen_B, real_a_paths)
+    features_real_b = evaluator.extract_features(real_b_paths, config.BATCH_SIZE)
+    features_fake_b = evaluator.extract_features_from_generator(gen_B, real_a_paths, config.BATCH_SIZE)
     
     kid_ab_mean, kid_ab_std = evaluator.compute_kid(features_real_b, features_fake_b)
     print(f"KID (A→B): {kid_ab_mean:.4f} ± {kid_ab_std:.4f}")
     
     # B→A変換の評価
     print("\n[B→A 変換の評価]")
-    features_real_a = evaluator.extract_features(real_a_paths)
-    features_fake_a = evaluator.extract_features_from_generator(gen_A, real_b_paths)
+    features_real_a = evaluator.extract_features(real_a_paths, config.BATCH_SIZE)
+    features_fake_a = evaluator.extract_features_from_generator(gen_A, real_b_paths, config.BATCH_SIZE)
     
     kid_ba_mean, kid_ba_std = evaluator.compute_kid(features_real_a, features_fake_a)
     print(f"KID (B→A): {kid_ba_mean:.4f} ± {kid_ba_std:.4f}")
