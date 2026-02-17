@@ -55,3 +55,6 @@ def test():
             save_image(fake_B * 0.5 + 0.5, f"{output_dir}/fake_B_{idx}.png")
 
             print(f" [{idx + 1}/{min(len(dataset), MAX_IMAGES)}] 保存完了")
+
+if __name__ == "__main__":
+    test()
