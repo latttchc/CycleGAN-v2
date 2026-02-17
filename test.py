@@ -8,16 +8,29 @@ from dataset import CustomDataset
 from utils import load_checkpoint
 from pathlib import Path
 import os
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 
 # 設定
 OUTPUT_DIR = 'saved_images/test'
 MAX_IMAGES = 20
 
+# テスト用 transform（リサイズを最初に行いサイズを統一する）
+test_transforms = A.Compose(
+    [
+        A.Resize(width=256, height=256),
+        A.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], max_pixel_value=255),
+        ToTensorV2(),
+    ],
+    additional_targets={"image0": "image"},
+    is_check_shapes=False,  # A と B のサイズが異なっても許容する
+)
+
 def test():
     """
     学習済みCycleGANでテスト画像を生成するスクリプト
-    
+
     Generator A (B→A変換): CHECKPOINT_GEN_A から読み込み
     Generator B (A→B変換): CHECKPOINT_GEN_B から読み込み
     """
@@ -39,7 +52,7 @@ def test():
         betas=(0.5, 0.999)
     )
 
-    # チェックポイントの読み込み（Generator用のチェックポイントを使用）
+    # チェックポイントの読み込み
     if os.path.exists(config.CHECKPOINT_GEN_A):
         load_checkpoint(config.CHECKPOINT_GEN_A, gen_A, opt_gen, config.LEARNING_RATE)
         print(f"✓ Generator A loaded from {config.CHECKPOINT_GEN_A}")
@@ -57,15 +70,15 @@ def test():
     gen_A.eval()
     gen_B.eval()
 
-    # テスト用データセットの準備（valディレクトリを使用）
+    # テスト用データセット（test_transforms を使用）
     dataset = CustomDataset(
         root_a=config.VAL_DIR + "/testA",
         root_b=config.VAL_DIR + "/testB",
-        transform=config.transforms
+        transform=test_transforms  # config.transforms ではなくテスト用を使用
     )
     loader = DataLoader(
         dataset,
-        batch_size=config.BATCH_SIZE,
+        batch_size=1,  # テスト時は1に固定
         shuffle=False,
         num_workers=config.NUM_WORKERS
     )
